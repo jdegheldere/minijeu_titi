@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-<title>Le Labo – ingénierie et handicap</title>
+<title>Le Labo – ingénierie au service du handicap</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -121,6 +121,10 @@ p{margin:.5em 0;line-height:1.4}
 .how{padding-left:20px;margin:12px 0;line-height:1.45}
 .how li{margin:5px 0}
 .logo{width:58px;height:58px;border-radius:16px;background:var(--signal);display:flex;align-items:center;justify-content:center;font-size:32px}
+.crit{display:grid;grid-template-columns:8.2em 3.2em 1fr 2em;align-items:center;gap:8px;margin:5px 0;font-size:14px}
+.crit.low{opacity:.5}.cw{color:var(--muted);font-size:13px}
+.cb{height:9px;background:var(--tile);border-radius:9px;overflow:hidden}.cb i{display:block;height:100%;background:var(--mint);transition:width .2s}
+.cv{font-weight:700;text-align:right}.cv.neg{color:var(--coral)}
 @media (prefers-reduced-motion: reduce){.toast{animation:none}.pad{transition:none}}
 </style>
 </head>
@@ -132,8 +136,9 @@ p{margin:.5em 0;line-height:1.4}
 <div id="hud">
   <div class="row">
     <div class="pill" title="Énergie">☕ <span class="bar"><i id="enBar"></i></span></div>
-    <div class="pill" id="repPill" title="Réputation"></div>
-    <button class="pill" id="scorePill" title="Boutique : dépense tes points">🛒 0 pts</button>
+    <div class="pill" id="clockPill" title="Heure et jour">🕘 9:00</div>
+    <button class="pill" id="renPill" title="Renommée et appels à projets">🏅 0</button>
+    <button class="pill" id="scorePill" title="Boutique : dépense tes points">🛒 0</button>
     <button class="pill" id="dosBtn" title="Dossiers en cours">📋 <span id="dosN">0</span></button>
   </div>
   <div id="obj"></div>
@@ -152,27 +157,28 @@ p{margin:.5em 0;line-height:1.4}
   <div class="card">
     <div class="logo">🦾</div>
     <h1>Le Labo</h1>
-    <p class="sub">Une journée sans fin dans un labo d’ingénierie et handicap.</p>
+    <p class="sub">La vie d’un lab d’ingénierie au service du handicap, une journée après l’autre.</p>
     <ul class="how">
-      <li>Les patients arrivent à <b>l’accueil</b> avec un besoin. Prends leur dossier en charge.</li>
-      <li>Consulte tes <b>collègues</b> dans leurs bureaux et résous leurs énigmes.</li>
-      <li>Conçois la pièce dans <b>ton bureau</b>, lance <b>l’impression 3D</b>, puis teste-la au <b>labo d’essais</b>.</li>
-      <li>Remets l’aide technique au patient, à l’accueil.</li>
-      <li>Ton énergie baisse : au fond du couloir, à droite, la passerelle mène à la <b>salle café</b>.</li>
-      <li>Dépense tes points avec le bouton 🛒 : nouvelles imprimantes, impressions plus rapides, renforts temporaires.</li>
-      <li>Certains patients reviennent plus tard pour améliorer leur projet.</li>
+      <li>Les patients arrivent à <b>l’accueil</b> avec un besoin et des attentes. Prends leur dossier en charge.</li>
+      <li>Consulte tes <b>collègues</b> et résous leurs énigmes. Pendant une énigme, ton énergie et la salle d’attente sont en pause.</li>
+      <li>Dans <b>ton bureau</b>, modélise la pièce puis fais les bons <b>compromis</b> avec le patient : on ne peut pas tout avoir.</li>
+      <li>Lance <b>l’impression 3D</b>, teste au <b>labo d’essais</b>, puis remets l’aide technique à l’accueil.</li>
+      <li>Chaque conception rejoint ta <b>bibliothèque</b> 📚 et fait grandir la <b>renommée</b> du lab 🏅. Remporte des <b>appels à projets</b> pour des bonus.</li>
+      <li>Une journée va de 9 h à 17 h. Les impressions tournent la nuit et ta progression est sauvegardée.</li>
+      <li>Au fond du couloir, à droite, la passerelle mène à la <b>salle café</b>. Le bouton 🛒 sert à acheter du matériel ou des renforts.</li>
     </ul>
     <p class="muted">Pose ton pouce n’importe où pour te déplacer. Le bouton jaune sert à entrer dans une pièce. Sur ordinateur : flèches ou ZQSD, et Espace.</p>
     <button class="btn big" id="play">Commencer la journée</button>
+    <button class="btn alt full hidden" id="newg">Nouvelle partie</button>
     <p class="muted" id="bestTxt"></p>
   </div>
 </div>
 
-<div id="over" class="overlay hidden">
+<div id="dayend" class="overlay hidden">
   <div class="card">
-    <h2 style="margin:0 0 6px">Fin de journée</h2>
-    <p id="overTxt"></p>
-    <button class="btn big" id="replay">Recommencer</button>
+    <h2 style="margin:0 0 6px" id="dayTitle">Fin de journée</h2>
+    <div id="dayTxt"></div>
+    <button class="btn big" id="nextDay">Journée suivante</button>
   </div>
 </div>
 
@@ -362,23 +368,25 @@ const meLabel=makeLabel('Toi',{bg:'#ffcc33',fg:'#18324a',scale:0.32});player.add
 
 // ================= Données du jeu =================
 const FIRST=['Jeanne','Marcel','Inès','Paul','Yasmine','Louis','Chantal','Karim','Élise','Théo','Odile','Bastien','Fatou','René','Lucie','Arthur','Mireille','Samir','Agathe','Gaston','Nour','Victor','Maëlle','Hamid','Solène','Joseph','Aïcha','Martin'];
+const CAT={repas:'Repas',quotidien:'Gestes du quotidien',domotique:'Maison connectée et numérique',mobilite:'Mobilité',loisirs:'Loisirs'};
 const NEEDS=[
-  {pb:'a du mal à tenir ses couverts (arthrose)',dev:'Manche de couvert ergonomique',ex:['ergo']},
-  {pb:'ne parvient plus à tourner ses clés',dev:'Aide à la préhension de clés',ex:['bio']},
-  {pb:'renverse son verre à cause de tremblements',dev:'Gobelet stabilisé lesté',ex:['ergo','bio']},
-  {pb:'veut utiliser sa tablette avec un seul doigt',dev:'Support de tablette et stylet adapté',ex:['info','ergo']},
-  {pb:'doit pouvoir appeler à l’aide depuis son lit',dev:'Bouton d’appel connecté',ex:['elec','info']},
-  {pb:'n’arrive pas à ouvrir les portes en fauteuil',dev:'Ouvre-porte assisté',ex:['elec','bio']},
-  {pb:'ne peut plus tourner les pages d’un livre',dev:'Tourne-page motorisé',ex:['elec']},
-  {pb:'veut fixer son téléphone à son fauteuil',dev:'Support de téléphone pour fauteuil',ex:['bio']},
-  {pb:'est malvoyant·e et ne repère plus les boutons du four',dev:'Repères tactiles imprimés',ex:['ergo']},
-  {pb:'veut jouer aux jeux vidéo d’une seule main',dev:'Manette adaptée une main',ex:['elec','info']},
-  {pb:'a du mal à enfiler ses chaussettes',dev:'Enfile-chaussettes sur mesure',ex:['ergo','bio']},
-  {pb:'veut allumer les lumières à la voix',dev:'Interrupteur à commande vocale',ex:['info','elec']},
-  {pb:'peine à écrire avec un stylo classique',dev:'Grossisseur de stylo sur mesure',ex:['ergo']},
-  {pb:'souhaite peindre malgré une paralysie de la main',dev:'Porte-pinceau adapté',ex:['bio','ergo']},
-  {pb:'a besoin d’un rappel pour ses médicaments',dev:'Pilulier connecté',ex:['info']},
-  {pb:'n’arrive plus à ouvrir les bocaux',dev:'Ouvre-bocal à levier',ex:['bio']},
+  {pb:'a du mal à tenir ses couverts (arthrose)',dev:'Manche de couvert ergonomique',ex:['ergo'],cat:'repas'},
+  {pb:'ne parvient plus à tourner ses clés',dev:'Aide à la préhension de clés',ex:['bio'],cat:'quotidien'},
+  {pb:'renverse son verre à cause de tremblements',dev:'Gobelet stabilisé lesté',ex:['ergo','bio'],cat:'repas'},
+  {pb:'veut utiliser sa tablette avec un seul doigt',dev:'Support de tablette et stylet adapté',ex:['info','ergo'],cat:'domotique'},
+  {pb:'doit pouvoir appeler à l’aide depuis son lit',dev:'Bouton d’appel connecté',ex:['elec','info'],cat:'domotique'},
+  {pb:'n’arrive pas à ouvrir les portes en fauteuil',dev:'Ouvre-porte assisté',ex:['elec','bio'],cat:'mobilite'},
+  {pb:'ne peut plus tourner les pages d’un livre',dev:'Tourne-page motorisé',ex:['elec'],cat:'loisirs'},
+  {pb:'veut fixer son téléphone à son fauteuil',dev:'Support de téléphone pour fauteuil',ex:['bio'],cat:'mobilite'},
+  {pb:'est malvoyant·e et ne repère plus les boutons du four',dev:'Repères tactiles imprimés',ex:['ergo'],cat:'repas'},
+  {pb:'veut jouer aux jeux vidéo d’une seule main',dev:'Manette adaptée une main',ex:['elec','info'],cat:'loisirs'},
+  {pb:'a du mal à enfiler ses chaussettes',dev:'Enfile-chaussettes sur mesure',ex:['ergo','bio'],cat:'quotidien'},
+  {pb:'veut allumer les lumières à la voix',dev:'Interrupteur à commande vocale',ex:['info','elec'],cat:'domotique'},
+  {pb:'peine à écrire avec un stylo classique',dev:'Grossisseur de stylo sur mesure',ex:['ergo'],cat:'quotidien'},
+  {pb:'souhaite peindre malgré une paralysie de la main',dev:'Porte-pinceau adapté',ex:['bio','ergo'],cat:'loisirs'},
+  {pb:'a besoin d’un rappel pour ses médicaments',dev:'Pilulier connecté',ex:['info'],cat:'domotique'},
+  {pb:'n’arrive plus à ouvrir les bocaux',dev:'Ouvre-bocal à levier',ex:['bio'],cat:'repas'},
+  {pb:'n’arrive plus à monter la petite marche de son entrée',dev:'Rampe d’accès modulaire',ex:['bio'],cat:'mobilite'},
 ];
 const SHIRTS=[0xe2574c,0x3e8ed0,0x4fa864,0x7b5ccf,0xc99a2e,0xd96c8a,0x2f9d8a,0x8a8f98,0xf0a35e];
 const STEP={
@@ -386,7 +394,7 @@ const STEP={
   bio:{room:'bio',label:'Mesures avec Sofia (biomécanique)',short:'Bioméca'},
   elec:{room:'elec',label:'Circuit avec Malik (électronique)',short:'Élec'},
   info:{room:'info',label:'Programme avec Hugo (informatique)',short:'Info'},
-  cao:{room:'cao',label:'Concevoir la pièce dans ton bureau',short:'CAO'},
+  cao:{room:'cao',label:'Conception et compromis dans ton bureau',short:'CAO'},
   print:{room:'print',label:'Lancer l’impression 3D',short:'Impression'},
   collect:{room:'print',label:'Récupérer la pièce imprimée',short:'Récupérer'},
   essai:{room:'essai',label:'Essai et réglages avec Léa',short:'Essai'},
@@ -404,7 +412,7 @@ const DIMS=[
   ()=>({k:'Budget',v:'serré',good:'Pièce imprimée en un seul bloc',bad:'Nombreux composants coûteux'}),
 ];
 const CAFE_LINES=[
-  'Malik raconte qu’il a réparé le grille-pain du labo avec une carte Arduino.',
+  'Malik raconte qu’il a réparé le grille-pain du lab avec une carte Arduino.',
   'Claire a apporté des chouquettes. Tout le monde est de bonne humeur.',
   'Hugo jure que le bug de vendredi « n’était pas de sa faute ».',
   'Sofia te montre une vidéo de son chat qui fait du skate.',
@@ -412,6 +420,7 @@ const CAFE_LINES=[
   'Nadia rappelle que la machine est à détartrer. Personne ne bouge.',
   'Jules a rempli le bac à grains. Héros du jour.',
   'Débat animé : PLA ou PETG pour les pièces en contact avec la peau ?',
+  'Quelqu’un a laissé un appel à projets imprimé à côté des tasses. Ambitieux.',
 ];
 const VIEW_LINES=['Le soleil se reflète sur le lac. Tu respires un grand coup.','Au loin, les montagnes. Une idée de conception te traverse l’esprit.',
   'Un vol d’oiseaux passe au-dessus du campus.','Le vent frais te remet les idées en place.','Tu comptes les arbres du parc. Tu abandonnes vers trente-sept.'];
@@ -419,35 +428,111 @@ const IDLE={ergo:'Claire : « Rien pour moi pour l’instant. Reviens avec un do
   elec:'Malik : « Le fer à souder chauffe pour rien… Passe quand tu as un dossier. »',info:'Hugo : « Je compile. Enfin, je fais semblant. Rien à programmer ? »',
   essai:'Léa : « Le banc d’essai est libre. Apporte-moi une pièce imprimée. »',cao:'Ton bureau. Aucune pièce à concevoir pour le moment.'};
 
+// Co-conception : critères et options de conception
+const CRIT=['Confort','Discrétion','Légèreté','Robustesse','Coût'];
+const CRIT_ICON=['🛋️','🤫','🪶','🛡️','💶'];
+const OPTS=[
+  {n:'Coque épaisse renforcée',e:{3:2,2:-1}},
+  {n:'Structure ajourée',e:{2:2,3:-1}},
+  {n:'Revêtement souple en TPU',e:{0:2,4:-1}},
+  {n:'Impression monobloc simple',e:{4:2,0:-1}},
+  {n:'Forme compacte, couleur neutre',e:{1:2,0:-1}},
+  {n:'Grandes poignées faciles à saisir',e:{0:1,3:1,1:-1}},
+  {n:'Finitions poncées et vernies',e:{0:1,1:1,4:-1}},
+  {n:'Inserts métalliques',e:{3:2,4:-1,2:-1}},
+  {n:'Filament recyclé',e:{4:1,1:1,3:-1}},
+  {n:'Fixations magnétiques',e:{0:1,2:1,3:-1}},
+  {n:'Gros boutons très visibles',e:{0:2,1:-2,4:1}},
+  {n:'Modèle paramétrique ajusté sur mesure',e:{0:1,2:1,4:-1}},
+];
+const IMPROVE=['son état a évolué, il faut un ajustement','une version plus légère serait mieux','il faudrait pouvoir l’utiliser en extérieur','une attache s’est usée, il faut la renforcer','une couleur plus gaie lui ferait plaisir'];
+const COMPLAINT=['pas assez confortable au quotidien','pas assez discret à son goût','un peu trop lourd à l’usage','une pièce a cassé','trop cher à reproduire'];
+const starsTxt=s=>'★'.repeat(s)+'☆'.repeat(5-s);
+const wishTxt=w=>CRIT.map((c,i)=>w[i]?CRIT_ICON[i]+' '+c+' '+'★'.repeat(w[i]):'').filter(Boolean).join(' · ');
+function genWishes(){const w=[0,0,0,0,0];shuffle([0,1,2,3,4]).slice(0,3).forEach((c,i)=>w[c]=[3,2,1][i]);return w;}
+function scoreOf(w,opts){const cov=[0,0,0,0,0];opts.forEach(o=>{for(const k in o.e)cov[k]+=o.e[k];});return{cov,s:cov.reduce((a,c,i)=>a+c*w[i],0)};}
+function pairRange(w,opts){let mn=Infinity,mx=-Infinity,best=null;for(let i=0;i<opts.length;i++)for(let j=i+1;j<opts.length;j++){const r=scoreOf(w,[opts[i],opts[j]]);if(r.s<mn)mn=r.s;if(r.s>mx){mx=r.s;best=r;}}return{mn,mx,best};}
+function genOptions(w){let o,r;do{o=shuffle(OPTS.slice()).slice(0,4);r=pairRange(w,o);}while(r.mx===r.mn);return o;}
+function weakest(w,cov){let bi=-1,bv=Infinity;w.forEach((v,i)=>{if(!v)return;const s=cov[i]-v*0.1;if(s<bv){bv=s;bi=i;}});return bi;}
+
+// Renommée et appels à projets
+const TIERS=[[0,'Lab débutant'],[80,'Lab repéré localement'],[220,'Référence de la ville'],[450,'Référence régionale'],[800,'Référence nationale'],[1300,'Rayonnement international']];
+const tierOf=r=>{let i=0;TIERS.forEach((t,k)=>{if(r>=t[0])i=k;});return i;};
+const PROJ=[
+  {key:'repas',type:'cat',cat:'repas',title:'Appel « Bien manger chez soi »',what:'patients aidés pour les repas'},
+  {key:'loisirs',type:'cat',cat:'loisirs',title:'Appel « Loisirs pour tous »',what:'patients aidés pour leurs loisirs'},
+  {key:'domo',type:'cat',cat:'domotique',title:'Appel « Maison connectée »',what:'aides connectées ou numériques livrées'},
+  {key:'quot',type:'cat',cat:'quotidien',title:'Programme « Gestes du quotidien »',what:'patients aidés au quotidien'},
+  {key:'mob',type:'cat',cat:'mobilite',title:'Fondation « Bouger librement »',what:'aides à la mobilité livrées'},
+  {key:'wheel',type:'wheel',title:'Programme « Fauteuil et autonomie »',what:'patients en fauteuil aidés'},
+  {key:'five',type:'five',title:'Prix « Qualité d’usage »',what:'remises notées 5 étoiles'},
+  {key:'impr',type:'impr',title:'Programme « Suivi au long cours »',what:'améliorations livrées'},
+  {key:'arch',type:'archive',title:'Fonds « Partage open source »',what:'nouvelles conceptions archivées'},
+];
+
 let G;let pid=0;
-function freshState(){return{started:false,over:false,t:0,score:0,rep:5,energy:100,helped:0,coffees:0,queue:[],active:[],nextArrival:3,level:1,
-  printers:[null,null],speedLv:0,hires:{},returns:[],credits:0,puzzleD:null,hint:false,lastView:-999,room:'couloir',modal:false,ptok:0,best:+(store.get('labo_best')||0)};}
+function freshState(){return{started:false,dayEnding:false,t:0,dayT:0,day:1,cut:false,score:0,renom:0,energy:100,helped:0,coffees:0,queue:[],active:[],nextArrival:3,level:1,
+  printers:[null,null],speedLv:0,hires:{},returns:[],credits:0,puzzleD:null,hint:false,lastView:-999,room:'couloir',modal:false,ptok:0,
+  library:{},projects:[],today:{helped:0,stars:0,coffees:0,pts:0,renom:0,left:0},best:+(store.get('labo_best')||0)};}
 G=freshState();
 function newPatient(){const need=pick(NEEDS);const ex=shuffle(need.ex.slice());
   if(G.level>=5&&Math.random()<0.4){const extra=shuffle(['ergo','bio','elec','info'].filter(e=>!ex.includes(e)))[0];if(extra)ex.push(extra);}
-  const p={id:++pid,name:pick(FIRST),age:ri(18,89),need,steps:[...ex,'cao','print','collect','essai','livrer'],si:0,
-    maxPat:rnd(160,220)-Math.min(60,G.level*6),wheel:Math.random()<0.4,shirt:pick(SHIRTS),printReady:false,taken:0};p.patience=p.maxPat;return p;}
+  const p={id:++pid,name:pick(FIRST),age:ri(18,89),need,wishes:genWishes(),steps:[...ex,'cao','print','collect','essai','livrer'],si:0,
+    maxPat:rnd(170,230)-Math.min(60,G.level*5),wheel:Math.random()<0.4,shirt:pick(SHIRTS),printReady:false,taken:0};p.patience=p.maxPat;return p;}
 const cur=d=>d.steps[d.si];
 const AUTO=['ergo','bio','elec','info','cao','essai'];
 const isAuto=d=>AUTO.includes(cur(d))&&G.hires[cur(d)]>G.t;
-const IMPROVE=['la prise est un peu trop grosse','une version plus légère serait mieux','une couleur plus visible aiderait','son état a évolué, il faut un ajustement','il faudrait pouvoir l’utiliser en extérieur','une version plus discrète serait appréciée','une attache a cassé, il faut la renforcer'];
-function improvePatient(o){const base=o.need.base||o.need.dev;const ver=(o.ver||1)+1;
-  const p={id:++pid,name:o.name,age:o.age,wheel:o.wheel,shirt:o.shirt,ver,improve:true,
-    need:{pb:'revient pour son projet « '+base+' » : '+pick(IMPROVE),dev:base+' V'+ver,base,ex:o.need.ex},
-    steps:[pick(o.need.ex),'cao','print','collect','livrer'],si:0,maxPat:rnd(170,230),printReady:false,taken:0};p.patience=p.maxPat;return p;}
+function improvePatient(o){const base=o.need.base||o.need.dev;const ver=(o.ver||1)+1;const st=o.stars||3;
+  const complain=st<=3&&o.weak>=0;const reason=complain?COMPLAINT[o.weak]:pick(IMPROVE);
+  let w=o.wishes?o.wishes.slice():genWishes();if(complain){w=w.map(v=>v===3?2:v);w[o.weak]=3;}
+  const p={id:++pid,name:o.name,age:o.age,wheel:o.wheel,shirt:o.shirt,ver,improve:true,wishes:w,
+    need:{pb:'revient pour son projet « '+base+' » : '+reason,dev:base+' V'+ver,base,ex:o.need.ex,cat:o.need.cat},
+    steps:[pick(o.need.ex),'cao','print','collect','livrer'],si:0,maxPat:rnd(180,240),printReady:false,taken:0};p.patience=p.maxPat;return p;}
+
+function addRenom(v){const before=tierOf(G.renom);G.renom=Math.max(0,G.renom+v);G.today.renom+=v;const after=tierOf(G.renom);
+  if(after>before)setTimeout(()=>toast('🏅 Nouveau statut : '+TIERS[after][1]+' ! Plus de patients viendront vous voir.'),700);}
+function newProject(){const used=G.projects.filter(Boolean).map(p=>p.key);
+  const pool=PROJ.filter(p=>!used.includes(p.key)&&!(p.type==='archive'&&Object.keys(G.library).length>=NEEDS.length-2));
+  const t=pick(pool);const n=ri(2,4)+Math.min(2,tierOf(G.renom)>>1);
+  return{key:t.key,type:t.type,cat:t.cat,title:t.title,what:t.what,target:n,prog:0,pts:150+n*90,ren:15+n*6};}
+function mileProject(M){return{key:'mile',type:'mile',title:'Cap des '+M+' patients aidés',what:'patients aidés au total',target:M,prog:G.helped,pts:M*40,ren:10+M*2};}
+function initProjects(){G.projects=[mileProject(5)];G.projects.push(newProject());G.projects.push(newProject());}
+function progress(type,fn){G.projects.forEach(p=>{if(p&&p.type===type&&(!fn||fn(p)))p.prog++;});}
+function checkProjects(){let delay=0;G.projects.forEach((p,i)=>{if(p.prog<p.target)return;
+    G.credits+=p.pts;G.score+=p.pts;G.today.pts+=p.pts;addRenom(p.ren);const msg='🏆 '+p.title+' remporté ! +'+p.pts+' pts, +'+p.ren+' renommée';setTimeout(()=>toast(msg),delay+=500);
+    G.projects[i]=p.type==='mile'?mileProject(p.target+5):null;});
+  G.projects.forEach((p,i)=>{if(!p){G.projects[i]=newProject();const np=G.projects[i];setTimeout(()=>toast('📨 Nouvel appel à projets : '+np.title),delay+=900);}});}
+function onDeliver(d,st){progress('cat',p=>p.cat===d.need.cat);if(d.wheel)progress('wheel');if(st===5)progress('five');if(d.improve)progress('impr');
+  G.projects.forEach(p=>{if(p.type==='mile')p.prog=G.helped;});checkProjects();}
+function archive(d){const base=d.need.base||d.need.dev;const L=G.library;const ver=d.ver||1;
+  if(!L[base]){L[base]={ver,uses:0,best:0};addRenom(8);toast('📚 Nouvelle conception archivée : '+base+' (+8 renommée)');progress('archive');checkProjects();}
+  else if(ver>L[base].ver){L[base].ver=ver;addRenom(4);toast('📚 Version V'+ver+' archivée : '+base+' (+4 renommée)');}}
+
+// ================= Sauvegarde =================
+function serialize(){const T=G.t;return JSON.stringify({v:2,pid,day:G.day,dayT:G.dayT,cut:G.cut,score:G.score,renom:G.renom,energy:G.energy,helped:G.helped,coffees:G.coffees,level:G.level,
+  credits:G.credits,speedLv:G.speedLv,library:G.library,projects:G.projects,today:G.today,queue:G.queue,active:G.active,nextArrival:G.nextArrival,hint:G.hint,
+  printers:G.printers.map(p=>p?{pid:p.pid,start:p.start-T,end:p.end-T}:null),hires:Object.fromEntries(Object.entries(G.hires).map(([k,v])=>[k,v-T])),
+  returns:G.returns.map(r=>({p:r.p,at:r.at-T}))});}
+function save(){if(!G.started)return;store.set('labo_save',serialize());const b=Math.max(G.best,G.score);G.best=b;store.set('labo_best',String(b));}
+function loadSave(){const s=store.get('labo_save');if(!s)return null;try{const o=JSON.parse(s);return o&&o.v===2?o:null;}catch(e){return null;}}
+function applySave(o){G=freshState();const p=o.pid;delete o.v;delete o.pid;Object.assign(G,o);G.t=0;pid=Math.max(pid,p||0);
+  G.active.forEach(d=>{d.autoAt=0;d.taken=Math.min(0,d.taken||0);});}
 
 // ================= HUD =================
 function toast(t){const el=document.createElement('div');el.className='toast';el.textContent=t;const box=$('#toasts');box.appendChild(el);
-  while(box.children.length>3)box.firstChild.remove();setTimeout(()=>el.remove(),3800);}
+  while(box.children.length>3)box.firstChild.remove();setTimeout(()=>el.remove(),4200);}
+const DAY_LEN=480;
+function clockTxt(){const m=Math.floor(540+G.dayT/DAY_LEN*480);const mm=m-m%5;return Math.floor(mm/60)+':'+String(mm%60).padStart(2,'0');}
 function objective(){if(G.energy<22)return '☕ Énergie basse : va prendre un café (fond du couloir, à droite).';
   const ready=G.active.find(d=>cur(d)==='collect'&&d.printReady);if(ready)return '🖨️ Pièce prête pour '+ready.name+' : passe en impression 3D.';
   const d=G.active.find(d=>cur(d)!=='collect'&&!isAuto(d));if(d)return '👉 '+d.name+' : '+STEP[cur(d)].label+'.';
   if(G.active.some(isAuto))return '🤝 Tes renforts avancent sur les dossiers.';
   if(G.active.length)return '⏳ Impression en cours. C’est le moment d’une pause café ?';
   if(G.queue.length)return '🚪 '+G.queue.length+' patient'+(G.queue.length>1?'s attendent':' attend')+' à l’accueil.';
+  if(G.cut)return '🕟 Fin de journée en approche. Plus de nouveaux patients aujourd’hui.';
   return '🌤️ Pas de patient pour l’instant. Profite de la vue sur la passerelle.';}
 function updateHUD(){const e=G.energy;const b=$('#enBar');b.style.width=e+'%';b.style.background=e>50?'var(--mint)':e>22?'#f0a35e':'var(--coral)';
-  $('#repPill').textContent='❤️'.repeat(G.rep)+'🤍'.repeat(Math.max(0,5-G.rep));$('#scorePill').textContent='🛒 '+G.credits+' pts';
+  $('#clockPill').textContent='🕘 J'+G.day+' · '+clockTxt();$('#renPill').textContent='🏅 '+G.renom;$('#scorePill').textContent='🛒 '+G.credits;
   $('#dosN').textContent=G.active.length+'/3';$('#obj').textContent=objective();}
 function updateMarkers(){const need={};
   G.active.forEach(d=>{const s=cur(d);if(isAuto(d))return;if(s==='collect'){if(d.printReady)need.print=1;}else if(s==='print'){if(G.printers.some(p=>!p))need.print=1;}else need[STEP[s].room]=1;});
@@ -465,15 +550,15 @@ function closeModal(){G.modal=false;G.puzzleD=null;G.ptok++;clearInterval(refres
 $('#mclose').onclick=closeModal;
 
 // ================= Interactions =================
-function interact(){if(G.modal||!G.started||G.over)return;const r=G.room;
+function interact(){if(G.modal||!G.started||G.dayEnding)return;const r=G.room;
   if(r==='couloir')return;if(r==='cafe')return openCafe();if(r==='passerelle')return openView();
   if(r==='accueil')return openAccueil();if(r==='print')return openPrint();openExpert(r);}
 
 function openCafe(){openModal('☕ Salle café',b=>{
   b.innerHTML='<p>L’odeur du café flotte dans la pièce. Jules te fait un signe de la main.</p><p class="muted">Énergie actuelle : '+Math.round(G.energy)+' %</p><div class="msg" id="cmsg"></div><button class="btn big" id="brew">Prendre un café</button>';
   $('#brew').onclick=()=>{const bt=$('#brew');bt.disabled=true;bt.textContent='La machine coule…';const tok=G.ptok;
-    setTimeout(()=>{if(tok!==G.ptok)return;G.energy=100;G.coffees++;let line=pick(CAFE_LINES);
-      if(Math.random()<0.25){G.hint=true;line='Sofia te glisse une astuce : ta prochaine conception sera plus simple.';}
+    setTimeout(()=>{if(tok!==G.ptok)return;G.energy=100;G.coffees++;G.today.coffees++;let line=pick(CAFE_LINES);
+      if(Math.random()<0.25){G.hint=true;line='Sofia te glisse une astuce : ta prochaine modélisation sera plus simple.';}
       $('#cmsg').className='msg good';$('#cmsg').textContent='Énergie à 100 %. '+line;bt.textContent='Retourner au travail';bt.disabled=false;bt.onclick=closeModal;},1600);};});}
 function openView(){openModal('🌤️ La passerelle',b=>{const ok=G.t-G.lastView>90;
   b.innerHTML='<p>'+pick(VIEW_LINES)+'</p><p class="muted">'+(ok?'Petite pause bien méritée : +8 % d’énergie.':'Tu viens déjà de faire une pause ici. Le café, c’est juste après la passerelle.')+'</p><button class="btn full" id="vok">Continuer</button>';
@@ -483,23 +568,25 @@ function patBar(p){return Math.max(0,p.patience/p.maxPat*100);}
 function accueilSig(){return G.queue.map(p=>p.id).join(',')+'|'+G.active.map(d=>d.id+':'+cur(d)).join(',');}
 function openAccueil(){let sig='';
   const render=b=>{sig=accueilSig();let h='<p class="muted">Nadia : « Voici les dossiers du moment. »</p>';
-    const deliver=G.active.filter(d=>cur(d)==='livrer');
-    deliver.forEach(d=>{h+='<div class="item"><b>'+d.name+'</b> attend son aide technique.<br><span class="muted">'+d.need.dev+'</span><br><button class="btn" data-del="'+d.id+'">Remettre l’aide technique</button></div>';});
+    G.active.filter(d=>cur(d)==='livrer').forEach(d=>{h+='<div class="item"><b>'+d.name+'</b> attend son aide technique.<br><span class="muted">'+d.need.dev+' · '+starsTxt(d.stars||3)+'</span><br><button class="btn" data-del="'+d.id+'">Remettre l’aide technique</button></div>';});
     if(!G.queue.length)h+='<p>Personne en salle d’attente pour l’instant.</p>';
-    G.queue.forEach(p=>{h+='<div class="item"><b>'+p.name+', '+p.age+' ans</b> '+(p.wheel?'♿':'')+'<br>'+(p.improve?'<span class="tag">🔁 Amélioration</span><br>':'')+p.name+' '+p.need.pb+'.<span class="bar"><i id="pb'+p.id+'" style="width:'+patBar(p)+'%"></i></span><span class="muted">Patience</span><br>'+
+    G.queue.forEach(p=>{const known=G.library[p.need.base||p.need.dev];
+      h+='<div class="item"><b>'+p.name+', '+p.age+' ans</b> '+(p.wheel?'♿':'')+'<br>'+(p.improve?'<span class="tag">🔁 Amélioration</span>':'')+(known&&!p.improve?'<span class="tag">📚 Déjà en bibliothèque</span>':'')+
+      '<br>'+p.name+' '+p.need.pb+'.<br><span class="muted">Attentes : '+wishTxt(p.wishes)+'</span><span class="bar"><i id="pb'+p.id+'" style="width:'+patBar(p)+'%"></i></span><span class="muted">Patience</span><br>'+
       (G.active.length<3?'<button class="btn" data-take="'+p.id+'">Prendre en charge</button>':'<span class="muted">Tu as déjà 3 dossiers en cours.</span>')+'</div>';});
     b.innerHTML=h;
     b.querySelectorAll('[data-take]').forEach(bt=>bt.onclick=()=>{const p=G.queue.find(x=>x.id==bt.dataset.take);if(!p||G.active.length>=3)return;
       G.queue=G.queue.filter(x=>x!==p);p.taken=G.t;G.active.push(p);refreshPatients();toast('📋 Dossier ouvert : '+p.need.dev+' pour '+p.name+'.');render(b);});
     b.querySelectorAll('[data-del]').forEach(bt=>bt.onclick=()=>{const d=G.active.find(x=>x.id==bt.dataset.del);if(d)deliver1(d);render(b);});};
   openModal('Accueil patients',render,b=>{if(accueilSig()!==sig)return render(b);G.queue.forEach(p=>{const el=document.getElementById('pb'+p.id);if(el)el.style.width=patBar(p)+'%';});});}
-function deliver1(d){const pts=Math.round(100+G.level*25+Math.max(0,150-(G.t-d.taken)/2)+(d.improve?60:0));G.score+=pts;G.credits+=pts;G.helped++;
-  if(G.helped%2===0)G.rep=Math.min(5,G.rep+1);G.active=G.active.filter(x=>x!==d);
-  if(Math.random()<(d.improve?0.25:0.45))G.returns.push({p:d,at:G.t+rnd(90,180)});
-  const old=G.level;G.level=1+Math.floor(G.helped/3);toast('🎉 '+d.name+' repart ravi·e : '+d.need.dev+'. +'+pts+' pts');
-  if(G.level>old)setTimeout(()=>toast('⭐ Niveau '+G.level+' : les cas deviennent plus complexes.'),900);}
+function deliver1(d){const st=d.stars||3;const tier=tierOf(G.renom);const base=100+G.level*25+Math.max(0,150-(G.t-d.taken)/2)+(d.improve?60:0);
+  const pts=Math.round(base*(0.5+0.1*st)*(1+0.1*tier));G.score+=pts;G.credits+=pts;G.helped++;G.today.helped++;G.today.stars+=st;G.today.pts+=pts;
+  G.active=G.active.filter(x=>x!==d);const lib=G.library[d.need.base||d.need.dev];if(lib){lib.uses++;lib.best=Math.max(lib.best,st);}
+  let pr=st<=2?0.75:st===3?0.6:st===4?0.4:0.25;if(d.improve)pr*=0.6;if(Math.random()<pr)G.returns.push({p:d,at:G.t+rnd(90,200)});
+  const ren=3+st*2+(d.improve?2:0);addRenom(ren);G.level=1+Math.floor(G.helped/3);
+  toast('🎉 '+d.name+' repart avec : '+d.need.dev+' '+starsTxt(st)+'. +'+pts+' pts, +'+ren+' renommée');onDeliver(d,st);}
 
-function printSig(){return G.printers.map(p=>p?(G.t>=p.end?'d':'b')+p.pid:'f').join(',')+'|'+G.active.map(d=>d.id+':'+cur(d)).join(',');}
+function printSig(){return G.printers.map(p=>p?(G.t>=p.end?'d':'b')+p.pid:'f').join(',')+'|'+G.active.map(d=>d.id+':'+cur(d)+(d.printReady?'r':'')).join(',');}
 function openPrint(){let sig='';
   const render=b=>{sig=printSig();let h='';
     G.printers.forEach((p,i)=>{if(!p){h+='<div class="item"><b>Imprimante '+(i+1)+'</b> : libre</div>';return;}
@@ -513,21 +600,48 @@ function openPrint(){let sig='';
     b.querySelectorAll('[data-go]').forEach(bt=>bt.onclick=()=>{const d=G.active.find(x=>x.id==bt.dataset.go);const i=G.printers.findIndex(p=>!p);if(!d||i<0)return;
       G.printers[i]={pid:d.id,start:G.t,end:G.t+rnd(24,38)*[1,0.75,0.55][G.speedLv]};d.si++;toast('🖨️ Impression lancée : '+d.need.dev+'.');render(b);});
     b.querySelectorAll('[data-col]').forEach(bt=>bt.onclick=()=>{const d=G.active.find(x=>x.id==bt.dataset.col);if(!d)return;const i=G.printers.findIndex(p=>p&&p.pid===d.id);
-      if(i>=0)G.printers[i]=null;d.printReady=false;d.si++;toast('📦 Pièce récupérée. Direction le labo d’essais.');render(b);});};
+      if(i>=0)G.printers[i]=null;d.printReady=false;d.si++;toast('📦 Pièce récupérée. Suite : '+STEP[cur(d)].short+'.');render(b);});};
   openModal('🖨️ Impression 3D',render,b=>{if(printSig()!==sig)return render(b);G.printers.forEach((p,i)=>{if(!p)return;const pr=Math.min(1,(G.t-p.start)/(p.end-p.start));
     const a=document.getElementById('pr'+i),t=document.getElementById('pt'+i);if(a)a.style.width=pr*100+'%';if(t)t.textContent=pr>=1?'Terminé':Math.ceil(p.end-G.t)+' s restantes';});});}
 
 function openExpert(id){const def=ROOM[id];const ds=G.active.filter(d=>STEP[cur(d)].room===id);
-  if(!ds.length){openModal(def.name,b=>{b.innerHTML='<p>'+IDLE[id]+'</p><button class="btn full" id="ok">D’accord</button>';$('#ok').onclick=closeModal;});return;}
+  if(!ds.length){openModal(def.name,b=>{b.innerHTML='<p>'+IDLE[id]+'</p>'+(id==='cao'?'<button class="btn full" id="lib">📚 Consulter la bibliothèque</button>':'')+'<button class="btn full alt" id="ok">D’accord</button>';
+    $('#ok').onclick=closeModal;if(id==='cao')$('#lib').onclick=openLibrary;});return;}
   if(G.energy<8){openModal(def.name,b=>{b.innerHTML='<p>Tu es épuisé·e, impossible de te concentrer. Va prendre un café avant de reprendre.</p><button class="btn full" id="ok">J’y vais</button>';$('#ok').onclick=closeModal;});return;}
   if(ds.length===1)return startPuzzle(ds[0]);
   openModal(def.name,b=>{b.innerHTML='<p>Quel dossier veux-tu traiter ?</p>'+ds.map(d=>'<button class="btn full alt" data-d="'+d.id+'">'+d.name+' : '+d.need.dev+'</button>').join('');
     b.querySelectorAll('[data-d]').forEach(bt=>bt.onclick=()=>startPuzzle(G.active.find(x=>x.id==bt.dataset.d)));});}
 
-function startPuzzle(d){const s=cur(d);const P={ergo:pzErgo,bio:pzBio,elec:pzPicross,info:pzMind,cao:pzPipes,essai:pzTiming}[s];const si0=d.si;
-  openModal(STEP[s].label,b=>{G.puzzleD=d;b.innerHTML='<p class="muted">Dossier de '+d.name+' : '+d.need.dev+'</p><div id="pz"></div>';
-    const tok=G.ptok;P($('#pz'),d,()=>{if(tok!==G.ptok||d.si!==si0)return;G.energy=Math.max(0,G.energy-6);d.si++;
-      const nx=cur(d);toast('✅ Étape validée. Suite : '+STEP[nx].short+'.');setTimeout(()=>{if(tok===G.ptok)closeModal();},900);});});}
+function startPuzzle(d){const s=cur(d);const si0=d.si;
+  openModal(STEP[s].label,b=>{G.puzzleD=d;b.innerHTML='<p class="muted">Dossier de '+d.name+' : '+d.need.dev+' · ⏸ énergie et salle d’attente en pause</p><div id="pz"></div>';
+    const tok=G.ptok;const el=$('#pz');
+    const win=delay=>{if(tok!==G.ptok||d.si!==si0)return;G.energy=Math.max(0,G.energy-5);d.si++;
+      toast('✅ Étape validée. Suite : '+STEP[cur(d)].short+'.');setTimeout(()=>{if(tok===G.ptok)closeModal();},delay||900);};
+    if(s==='cao')return pzCAO(el,d,win,tok);
+    ({ergo:pzErgo,bio:pzBio,elec:pzPicross,info:pzMind,essai:pzTiming})[s](el,d,()=>win());});}
+
+// ================= Conception et co-conception =================
+function pzCAO(el,d,win,tok){const base=d.need.base||d.need.dev;const go=()=>designPhase(el,d,win);
+  const pipes=()=>pzPipes(el,d,()=>setTimeout(()=>{if(tok===G.ptok)go();},800),d.improve?-1:0);
+  if(G.library[base]&&!d.improve){el.innerHTML='<p>📚 Une conception « '+base+' » existe déjà dans ta bibliothèque (V'+G.library[base].ver+').</p><p class="muted">La réutiliser évite de tout modéliser. Il reste à l’adapter avec '+d.name+'.</p><button class="btn full" id="reuse">Réutiliser la conception archivée</button><button class="btn alt full" id="scratch">Concevoir depuis zéro</button>';
+    $('#reuse').onclick=go;$('#scratch').onclick=pipes;}else pipes();}
+function designPhase(el,d,win){const w=d.wishes||genWishes();d.wishes=w;const opts=genOptions(w);const sel=new Set();let done=false;
+  const render=()=>{const chosen=[...sel].map(i=>opts[i]);const {cov}=scoreOf(w,chosen);
+    let h='<p><b>Co-conception avec '+d.name+'.</b> Impossible de tout satisfaire : choisis <b>2 options</b> pour trouver le meilleur compromis selon ses attentes (★ = importance, les critères grisés comptent peu).</p>';
+    CRIT.forEach((c,i)=>{const v=cov[i];const imp=w[i];
+      h+='<div class="crit'+(imp?'':' low')+'"><span class="cn">'+CRIT_ICON[i]+' '+c+'</span><span class="cw">'+(imp?'★'.repeat(imp):'–')+'</span>'+
+        '<span class="cb"><i style="width:'+Math.max(0,Math.min(4,v))/4*100+'%"></i></span><span class="cv'+(v<0?' neg':'')+'">'+(v>0?'+':v<0?'−':'')+Math.abs(v)+'</span></div>';});
+    h+='<div class="opts">'+opts.map((o,i)=>'<button class="chip'+(sel.has(i)?' on':'')+'" data-i="'+i+'"><b>'+o.n+'</b><br><span class="muted">'+
+      Object.entries(o.e).map(([k,v])=>CRIT[k]+' '+(v>0?'+'+v:'−'+(-v))).join(' · ')+'</span></button>').join('')+'</div><div class="msg" id="dm"></div>'+
+      (done?'':'<button class="btn full" id="dv" '+(sel.size===2?'':'disabled')+'>Valider la conception</button>');
+    el.innerHTML=h;
+    if(!done)el.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{const i=+c.dataset.i;if(sel.has(i))sel.delete(i);else if(sel.size<2)sel.add(i);render();});
+    const v=document.getElementById('dv');if(v)v.onclick=()=>{const ch=[...sel].map(i=>opts[i]);const r=scoreOf(w,ch);const rg=pairRange(w,opts);
+      const st=Math.max(1,Math.min(5,1+Math.round(4*(r.s-rg.mn)/(rg.mx-rg.mn))));d.stars=st;d.weak=weakest(w,r.cov);done=true;render();
+      const m=$('#dm');m.className='msg '+(st>=4?'good':st<=2?'bad':'');
+      m.textContent=starsTxt(st)+'  '+(st===5?d.name+' : « C’est exactement ce dont j’ai besoin ! »':st===4?'Très bon compromis.':st===3?'Compromis correct, '+d.name+' a quelques réserves.':'Compromis fragile : '+d.name+' risque de revenir.');
+      archive(d);win(2600);};};render();}
+function autoDesign(d){const w=d.wishes||genWishes();d.wishes=w;const rg=pairRange(w,genOptions(w));d.stars=4;d.weak=weakest(w,rg.best.cov);archive(d);}
 
 // ================= Énigmes =================
 function pzErgo(el,d,win){const n=G.level>=4?4:3;const dims=shuffle(DIMS.slice()).slice(0,n).map(f=>f());
@@ -569,19 +683,6 @@ function pzPicross(el,d,win){const n=G.level>=5?7:G.level>=3?6:5;
       const f2=filled();if(f2.every((r,yy)=>same(runs(r),rc[yy]))&&[...Array(n)].every((_,xx)=>same(runs(col(f2,xx)),cc[xx]))){done=true;win();}render();});
     const cl=document.getElementById('clr');if(cl)cl.onclick=()=>{st.forEach(r=>r.fill(0));render();};};render();}
 
-function pzSimon(el,d,win){const len=3+Math.min(4,G.level);const seq=[...Array(len)].map(()=>ri(0,3));const cols=['#e2574c','#3e8ed0','#ffcc33','#2f9d8a'];
-  let idx=0,input=false;const tok=G.ptok;
-  el.innerHTML='<p>Malik câble le circuit. Mémorise l’ordre des LED ('+len+' signaux) puis reproduis-le.</p><div class="simon">'+cols.map((c,i)=>'<button class="pad" data-i="'+i+'" style="background:'+c+';color:'+c+'"></button>').join('')+
-    '</div><div class="msg" id="m"></div><button class="btn full" id="go">Voir la séquence</button>';
-  const pads=[...el.querySelectorAll('.pad')];const flash=i=>{pads[i].classList.add('lit');setTimeout(()=>pads[i].classList.remove('lit'),330);};
-  const play=()=>{input=false;$('#go').disabled=true;$('#m').className='msg';$('#m').textContent='Regarde bien…';
-    seq.forEach((v,k)=>setTimeout(()=>{if(tok===G.ptok)flash(v);},500+k*620));
-    setTimeout(()=>{if(tok!==G.ptok)return;input=true;idx=0;$('#m').textContent='À toi !';},500+len*620);};
-  $('#go').onclick=play;
-  pads.forEach(p=>p.onclick=()=>{if(!input)return;const i=+p.dataset.i;flash(i);
-    if(i===seq[idx]){idx++;if(idx===len){input=false;$('#m').className='msg good';$('#m').textContent='Malik : « Ça s’allume, ça marche ! »';win();}}
-    else{input=false;$('#m').className='msg bad';$('#m').textContent='Court-circuit ! Malik relance la séquence.';G.energy=Math.max(0,G.energy-1);setTimeout(()=>{if(tok===G.ptok)play();},1200);}});}
-
 function pzMind(el,d,win){const L=G.level>=4?4:3,C=5,T=8;const cols=['#e2574c','#3e8ed0','#ffcc33','#2f9d8a','#7b5ccf'];
   let code,hist,guess;const reset=()=>{code=[...Array(L)].map(()=>ri(0,C-1));hist=[];guess=[];};reset();
   const render=(msg,cls)=>{el.innerHTML='<p>Hugo a verrouillé le programme. Trouve le code de '+L+' couleurs en '+T+' essais. ● = bonne couleur bien placée, ○ = bonne couleur mal placée.</p>'+
@@ -597,7 +698,7 @@ function pzMind(el,d,win){const L=G.level>=4?4:3,C=5,T=8;const cols=['#e2574c','
       else if(hist.length>=T){G.energy=Math.max(0,G.energy-2);reset();render('Plus d’essais. Hugo a changé le code, on recommence.','bad');}
       else render();};};render();}
 
-function pzPipes(el,d,win){let n=Math.min(7,4+Math.floor((G.level-1)/2));if(G.hint){n=Math.max(4,n-1);G.hint=false;}
+function pzPipes(el,d,win,adj){let n=Math.max(4,Math.min(7,4+Math.floor((G.level-1)/2))+(adj||0));if(G.hint){n=Math.max(4,n-1);G.hint=false;}
   const N=1,E=2,S=4,W=8,rot=m=>((m<<1)|(m>>3))&15;const sr=ri(0,n-1);let path=[];const vis=new Set();
   const dfs=(x,y)=>{vis.add(x+','+y);path.push([x,y]);if(x===n-1&&path.length>=n+1)return true;
     for(const [dx,dy] of shuffle([[1,0],[0,1],[0,-1],[-1,0]])){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=n||ny>=n||vis.has(nx+','+ny))continue;if(dfs(nx,ny))return true;}path.pop();return false;};
@@ -616,7 +717,7 @@ function pzPipes(el,d,win){let n=Math.min(7,4+Math.floor((G.level-1)/2));if(G.hi
     return s.replace(/<line /g,'<line stroke="'+c+'" stroke-width="20" stroke-linecap="round" ')+'<circle cx="50" cy="50" r="13" fill="'+c+'"/></svg>';};
   const render=()=>{const L=lit();let h='<p>Relie l’entrée ▶ à la sortie 🎯 en tournant les pièces (touche une case pour la faire pivoter).</p><div class="pgrid" style="grid-template-columns:24px repeat('+n+','+cs+'px) 24px;grid-auto-rows:'+cs+'px">';
     for(let y=0;y<n;y++){h+='<div class="pmark">'+(y===sr?'▶':'')+'</div>';for(let x=0;x<n;x++)h+='<div class="pcell" data-x="'+x+'" data-y="'+y+'">'+svg(g[y][x],L.has(x+','+y))+'</div>';h+='<div class="pmark">'+(y===er?'🎯':'')+'</div>';}
-    h+='</div><div class="msg'+(done?' good':'')+'">'+(done?'Conception validée. Le fichier part vers l’imprimante.':'')+'</div>';el.innerHTML=h;
+    h+='</div><div class="msg'+(done?' good':'')+'">'+(done?'Pièce modélisée. Place à la co-conception !':'')+'</div>';el.innerHTML=h;
     el.querySelectorAll('.pcell').forEach(c=>c.onclick=()=>{if(done)return;const x=+c.dataset.x,y=+c.dataset.y;g[y][x]=rot(g[y][x]);if(solved()){done=true;win();}render();});};render();}
 
 function pzTiming(el,d,win){const need=3;let hits=0,pos=0,dir=1,speed=0.55+G.level*0.05,zw=Math.max(0.1,0.24-G.level*0.015),zs=rnd(0.1,0.9-zw),done=false;const tok=G.ptok;
@@ -627,19 +728,33 @@ function pzTiming(el,d,win){const need=3;let hits=0,pos=0,dir=1,speed=0.55+G.lev
       if(hits>=need){done=true;m.textContent='Léa : « Essai concluant, '+d.name+' va adorer. »';$('#st').disabled=true;win();}}
     else{m.className='msg bad';m.textContent='Hors zone. Réessaie.';G.energy=Math.max(0,G.energy-1);}draw();};}
 
-// ================= Dossiers =================
-$('#dosBtn').onclick=$('#obj').onclick=()=>{if(!G.started||G.over)return;openModal('📋 Dossiers en cours',b=>{
+// ================= Dossiers, renommée, bibliothèque =================
+$('#dosBtn').onclick=$('#obj').onclick=()=>{if(!G.started||G.dayEnding)return;openModal('📋 Dossiers en cours',b=>{
   let h=G.active.length?'':'<p>Aucun dossier ouvert. Les patients t’attendent à l’accueil, première porte à gauche.</p>';
-  G.active.forEach(d=>{h+='<div class="item"><b>'+d.name+'</b> : '+d.need.dev+'<div class="steps">'+d.steps.map((s,i)=>'<span class="st '+(i<d.si?'done':i===d.si?'cur':'')+'">'+STEP[s].short+'</span>').join('')+'</div>'+
+  G.active.forEach(d=>{h+='<div class="item"><b>'+d.name+'</b> : '+d.need.dev+(d.stars?' '+starsTxt(d.stars):'')+'<br><span class="muted">Attentes : '+wishTxt(d.wishes||[0,0,0,0,0])+'</span><div class="steps">'+
+    d.steps.map((s,i)=>'<span class="st '+(i<d.si?'done':i===d.si?'cur':'')+'">'+STEP[s].short+'</span>').join('')+'</div>'+
     '<p class="muted" style="margin-bottom:0">'+(cur(d)==='collect'&&!d.printReady?'Impression en cours…':isAuto(d)?'🤝 Renfort en train de traiter : '+STEP[cur(d)].short:STEP[cur(d)].label)+'</p></div>';});
-  h+='<p class="muted">'+G.queue.length+' en salle d’attente · '+G.helped+' patients aidés · niveau '+G.level+' · '+G.coffees+' cafés</p>';b.innerHTML=h;});};
+  h+='<p class="muted">'+G.queue.length+' en salle d’attente · '+G.helped+' patients aidés · niveau '+G.level+' · '+G.coffees+' cafés</p><button class="btn full alt" id="lib">📚 Bibliothèque de conceptions</button>';
+  b.innerHTML=h;$('#lib').onclick=openLibrary;});};
+function openRenom(){if(!G.started||G.dayEnding)return;openModal('🏅 Renommée du lab',b=>{const ti=tierOf(G.renom);const nx=TIERS[ti+1];
+  let h='<p><b>'+TIERS[ti][1]+'</b> · '+G.renom+' points de renommée</p>';
+  if(nx)h+='<span class="bar" style="width:100%"><i style="width:'+Math.min(100,(G.renom-TIERS[ti][0])/(nx[0]-TIERS[ti][0])*100)+'%"></i></span><p class="muted">Prochain statut : '+nx[1]+' à '+nx[0]+'. Chaque statut attire plus de patients et augmente les points gagnés de 10 %.</p>';
+  h+='<p class="muted">La renommée monte avec chaque remise (davantage avec de bonnes notes), chaque conception archivée et chaque appel à projets remporté. Elle baisse si un patient repart sans solution.</p>';
+  h+='<h3 style="margin:14px 0 4px;font-size:17px">Appels à projets</h3>';
+  G.projects.forEach(p=>{const v=Math.min(p.prog,p.target);h+='<div class="item"><b>'+p.title+'</b><br><span class="muted">Objectif : '+p.target+' '+p.what+'</span><span class="bar"><i style="width:'+v/p.target*100+'%"></i></span><span class="muted">'+v+' / '+p.target+' · récompense : '+p.pts+' pts et '+p.ren+' renommée</span></div>';});
+  h+='<button class="btn full alt" id="lib">📚 Bibliothèque : '+Object.keys(G.library).length+' / '+NEEDS.length+' conceptions</button>';b.innerHTML=h;$('#lib').onclick=openLibrary;});}
+$('#renPill').onclick=openRenom;
+function openLibrary(){openModal('📚 Bibliothèque de conceptions',b=>{const n=Object.keys(G.library).length;
+  let h='<p><b>'+n+' / '+NEEDS.length+'</b> conceptions archivées. Chaque nouvelle conception augmente la renommée du lab, et une conception archivée peut être réutilisée pour aller plus vite.</p>';
+  NEEDS.forEach(nd=>{const L=G.library[nd.dev];h+=L?'<div class="item"><b>'+nd.dev+'</b> <span class="tag">V'+L.ver+'</span><br><span class="muted">'+CAT[nd.cat]+' · utilisée '+L.uses+' fois · meilleure note '+(L.best?starsTxt(L.best):'pas encore remise')+'</span></div>'
+    :'<div class="item" style="opacity:.5"><b>Conception à découvrir</b><br><span class="muted">'+CAT[nd.cat]+'</span></div>';});b.innerHTML=h;});}
 
 // ================= Boutique =================
 const HIRE_COST=280,HIRE_TIME=300,PRINTER_COST=[0,0,500,900],SPEED_COST=[400,800];
 const fmt=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
 function shopSig(){return G.credits+'|'+G.printers.length+'|'+G.speedLv+'|'+Object.keys(G.hires).join(',');}
 function openShop(){let sig='';const render=b=>{sig=shopSig();
-  let h='<p>Tu as <b>'+G.credits+' pts</b> à dépenser. Ton score de la journée ('+G.score+' pts) ne baisse pas.</p><h3 style="margin:14px 0 4px;font-size:17px">Imprimantes 3D</h3>';
+  let h='<p>Tu as <b>'+G.credits+' pts</b> à dépenser. Ton score total ('+G.score+' pts) ne baisse pas.</p><h3 style="margin:14px 0 4px;font-size:17px">Imprimantes 3D</h3>';
   if(G.printers.length<4){const c=PRINTER_COST[G.printers.length];h+='<div class="item"><b>Imprimante n°'+(G.printers.length+1)+'</b><br><span class="muted">Une impression de plus en parallèle.</span><br><button class="btn" data-buy="printer" '+(G.credits>=c?'':'disabled')+'>Acheter : '+c+' pts</button></div>';}
   else h+='<p class="muted">La salle d’impression est pleine (4 imprimantes).</p>';
   if(G.speedLv<2){const c=SPEED_COST[G.speedLv];h+='<div class="item"><b>Buses haute vitesse, niveau '+(G.speedLv+1)+'</b><br><span class="muted">Les nouvelles impressions vont plus vite.</span><br><button class="btn" data-buy="speed" '+(G.credits>=c?'':'disabled')+'>Améliorer : '+c+' pts</button></div>';}
@@ -650,13 +765,13 @@ function openShop(){let sig='';const render=b=>{sig=shopSig();
   b.querySelectorAll('[data-buy]').forEach(bt=>bt.onclick=()=>{if(bt.dataset.buy==='printer'){const c=PRINTER_COST[G.printers.length];if(G.credits<c)return;G.credits-=c;G.printers.push(null);printerParts[G.printers.length-1].g.visible=true;toast('🖨️ Nouvelle imprimante installée.');}
     else{const c=SPEED_COST[G.speedLv];if(G.credits<c)return;G.credits-=c;G.speedLv++;toast('⚡ Impressions accélérées.');}updateHUD();render(b);});
   b.querySelectorAll('[data-hire]').forEach(bt=>bt.onclick=()=>{const k=bt.dataset.hire;if(G.credits<HIRE_COST)return;G.credits-=HIRE_COST;G.hires[k]=G.t+HIRE_TIME;toast('🤝 Renfort engagé en '+ROOM[k].name+' pour 5 minutes.');updateHUD();render(b);});};
-  openModal('🛒 Boutique du labo',render,b=>{if(shopSig()!==sig)return render(b);for(const k in G.hires){const el=document.getElementById('hr'+k);if(el)el.textContent=fmt(Math.max(0,G.hires[k]-G.t));}});}
-$('#scorePill').onclick=()=>{if(G.started&&!G.over)openShop();};
+  openModal('🛒 Boutique du lab',render,b=>{if(shopSig()!==sig)return render(b);for(const k in G.hires){const el=document.getElementById('hr'+k);if(el)el.textContent=fmt(Math.max(0,G.hires[k]-G.t));}});}
+$('#scorePill').onclick=()=>{if(G.started&&!G.dayEnding)openShop();};
 
 // ================= Contrôles =================
 const joy={id:null,ox:0,oy:0,x:0,y:0};const jz=$('#joyzone'),jv=$('#joy'),kn=$('#knob');
 function resetJoy(){joy.id=null;joy.x=joy.y=0;jv.style.display='none';kn.style.transform='';}
-jz.addEventListener('pointerdown',e=>{if(G.modal||!G.started||G.over)return;joy.id=e.pointerId;joy.ox=e.clientX;joy.oy=e.clientY;joy.x=joy.y=0;
+jz.addEventListener('pointerdown',e=>{if(G.modal||!G.started||G.dayEnding)return;joy.id=e.pointerId;joy.ox=e.clientX;joy.oy=e.clientY;joy.x=joy.y=0;
   jv.style.left=e.clientX+'px';jv.style.top=e.clientY+'px';jv.style.display='block';try{jz.setPointerCapture(e.pointerId);}catch(_){}});
 jz.addEventListener('pointermove',e=>{if(e.pointerId!==joy.id)return;let dx=e.clientX-joy.ox,dy=e.clientY-joy.oy;const l=Math.hypot(dx,dy),R=55;if(l>R){dx*=R/l;dy*=R/l;}
   joy.x=dx/R;joy.y=dy/R;kn.style.transform='translate('+dx+'px,'+dy+'px)';});
@@ -666,39 +781,42 @@ addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=0;});
 $('#act').onclick=interact;
 
 // ================= Boucle =================
-const ENERGY_RATE=100/320;let lastRoom=null,hudT=0,walk=0;
+const ENERGY_RATE=100/640;let lastRoom=null,hudT=0,walk=0,saveT=0;
 const camPos=new THREE.Vector3(0,11,7);
 function resetPlayer(){player.position.set(0,0,-1.5);player.rotation.y=Math.PI;camPos.set(0,10.5,5.5);}
 resetPlayer();
-function update(dt){G.t+=dt;G.energy=Math.max(0,G.energy-dt*ENERGY_RATE);
-  G.nextArrival-=dt;if(G.nextArrival<=0){if(G.queue.length<3){const p=newPatient();G.queue.push(p);refreshPatients();toast('🚪 '+p.name+' vient d’arriver à l’accueil.');}
-    G.nextArrival=Math.max(28,70-G.level*5)+rnd(0,25);}
-  for(const p of G.queue.slice()){p.patience-=dt;if(p.patience<=0){G.queue=G.queue.filter(x=>x!==p);G.rep--;refreshPatients();toast('😞 '+p.name+' est reparti·e sans solution.');}}
-  G.printers.forEach((p,i)=>{const part=printerParts[i];if(!p){part.lightM.emissive.setHex(0x000000);part.lightM.color.setHex(0x6b7a88);part.piece.visible=false;return;}
+function update(dt){G.t+=dt;const paused=G.modal&&G.puzzleD;
+  if(!paused){G.energy=Math.max(0,G.energy-dt*ENERGY_RATE);G.dayT=Math.min(DAY_LEN,G.dayT+dt);
+    const open=G.dayT<DAY_LEN*0.9375;if(!open&&!G.cut){G.cut=true;toast('🕟 16 h 30 : plus de nouveaux patients aujourd’hui.');}
+    if(open){G.nextArrival-=dt;if(G.nextArrival<=0){if(G.queue.length<3){const p=newPatient();G.queue.push(p);refreshPatients();toast('🚪 '+p.name+' vient d’arriver à l’accueil.');}
+        G.nextArrival=Math.max(25,70-G.level*4-tierOf(G.renom)*4)+rnd(0,25);}
+      for(const r of G.returns.slice()){if(G.t>=r.at&&G.queue.length<3){G.returns=G.returns.filter(x=>x!==r);const p=improvePatient(r.p);G.queue.push(p);refreshPatients();toast('🔁 '+p.name+' revient pour améliorer son projet.');}}}
+    for(const p of G.queue.slice()){p.patience-=dt;if(p.patience<=0){G.queue=G.queue.filter(x=>x!==p);addRenom(-8);G.today.left++;refreshPatients();toast('😞 '+p.name+' est reparti·e sans solution (−8 renommée).');}}}
+  G.printers.forEach((p,i)=>{const part=printerParts[i];if(!part)return;if(!p){part.lightM.emissive.setHex(0x000000);part.lightM.color.setHex(0x6b7a88);part.piece.visible=false;return;}
     const d=G.active.find(x=>x.id===p.pid);const pr=Math.min(1,(G.t-p.start)/(p.end-p.start));part.piece.visible=true;part.piece.scale.y=Math.max(0.01,pr);
     if(pr>=1){if(d&&!d.printReady){d.printReady=true;toast('🖨️ Pièce terminée pour '+d.name+'. Va la récupérer.');}const on=Math.floor(G.t*3)%2;part.lightM.color.setHex(0x2fd17a);part.lightM.emissive.setHex(on?0x2fd17a:0x0a3a20);}
     else{part.lightM.color.setHex(0xf0a35e);part.lightM.emissive.setHex(0xa0501a);}});
-  for(const r of G.returns.slice()){if(G.t>=r.at&&G.queue.length<3){G.returns=G.returns.filter(x=>x!==r);const p=improvePatient(r.p);G.queue.push(p);refreshPatients();toast('🔁 '+p.name+' revient pour améliorer son projet.');}}
   for(const k in G.hires){if(G.t>=G.hires[k]){delete G.hires[k];toast('👋 Le renfort en '+ROOM[k].name+' a terminé sa mission.');}}
   for(const k in helpers){const on=G.hires[k]>G.t;helpers[k].h.visible=on;helpers[k].hl.visible=on;}
-  for(const d of G.active){if(isAuto(d)&&!(G.modal&&G.puzzleD===d)){if(!d.autoAt)d.autoAt=G.t+12;if(G.t>=d.autoAt){d.autoAt=0;const s=cur(d);d.si++;toast('🤝 Renfort : étape « '+STEP[s].short+' » faite pour '+d.name+'.');}}else d.autoAt=0;}
-  if(G.rep<=0)gameOver();}
+  for(const d of G.active){if(isAuto(d)&&!(G.modal&&G.puzzleD===d)){if(!d.autoAt)d.autoAt=G.t+12;
+      if(G.t>=d.autoAt){d.autoAt=0;const s=cur(d);if(s==='cao')autoDesign(d);d.si++;toast('🤝 Renfort : étape « '+STEP[s].short+' » faite pour '+d.name+'.');}}else d.autoAt=0;}
+  if(G.dayT>=DAY_LEN&&!G.modal)endDay();}
 
 function movePlayer(dt){let mx=joy.x,mz=joy.y;if(keys['arrowleft']||keys['q']||keys['a'])mx-=1;if(keys['arrowright']||keys['d'])mx+=1;if(keys['arrowup']||keys['z']||keys['w'])mz-=1;if(keys['arrowdown']||keys['s'])mz+=1;
   const l=Math.hypot(mx,mz);if(l>1){mx/=l;mz/=l;}const ud=player.userData;
-  if(l>0.1&&!G.modal&&G.started&&!G.over){const sp=(G.energy<20?2.6:4.6)*Math.min(1,l);const p=player.position;
+  if(l>0.1&&!G.modal&&G.started&&!G.dayEnding){const sp=(G.energy<20?2.8:4.6)*Math.min(1,l);const p=player.position;
     const nx=p.x+mx*sp*dt;if(walkable(nx,p.z))p.x=nx;const nz=p.z+mz*sp*dt;if(walkable(p.x,nz))p.z=nz;
     const target=Math.atan2(mx,mz);let dr=target-player.rotation.y;dr=Math.atan2(Math.sin(dr),Math.cos(dr));player.rotation.y+=dr*Math.min(1,dt*14);
     walk+=dt*sp*2.6;const a=Math.sin(walk)*0.6;ud.legs[0].rotation.x=a;ud.legs[1].rotation.x=-a;ud.arms[0].rotation.x=-a*0.7;ud.arms[1].rotation.x=a*0.7;}
   else{ud.legs.forEach(x=>x.rotation.x*=0.8);ud.arms.forEach(x=>x.rotation.x*=0.8);}
   G.room=roomAt(player.position.x,player.position.z);
   if(G.room!==lastRoom){lastRoom=G.room;const act=$('#act');
-    if(G.room==='couloir'||G.modal||!G.started||G.over)act.style.display='none';
+    if(G.room==='couloir'||G.modal||!G.started||G.dayEnding)act.style.display='none';
     else{act.style.display='block';act.textContent=G.room==='cafe'?'☕ Pause café':G.room==='passerelle'?'Admirer la vue':ROOM[G.room].name;}}}
 
 let lastT=performance.now();
 function frame(now){const dt=Math.min(0.05,(now-lastT)/1000);lastT=now;
-  if(G.started&&!G.over)update(dt);movePlayer(dt);
+  if(G.started&&!G.dayEnding){update(dt);saveT+=dt;if(saveT>15){saveT=0;save();}}movePlayer(dt);
   hudT+=dt;if(hudT>0.2&&G.started){hudT=0;updateHUD();updateMarkers();}
   for(const k in markers){const m=markers[k];if(m.visible)m.position.y=(k==='cafe'?3.5:3.9)+Math.sin(now/260)*0.15;}
   npcs.forEach((n,i)=>n.children[3].rotation.x=Math.sin(now/700+i)*0.12);
@@ -706,14 +824,39 @@ function frame(now){const dt=Math.min(0.05,(now-lastT)/1000);lastT=now;
   renderer.render(scene,camera);requestAnimationFrame(frame);}
 requestAnimationFrame(frame);
 
-// ================= Début / fin =================
-function showBest(){$('#bestTxt').textContent=G.best?'Meilleur score : '+G.best+' pts':'';}showBest();
-$('#play').onclick=()=>{$('#start').classList.add('hidden');G.started=true;lastRoom=null;updateHUD();toast('Bonne journée au labo ! Les patients arrivent à l’accueil.');};
-function gameOver(){if(G.over)return;G.over=true;if(G.modal)closeModal();$('#act').style.display='none';resetJoy();
-  const best=Math.max(G.best,G.score);store.set('labo_best',String(best));
-  $('#overTxt').innerHTML='Trop de patients sont repartis sans solution. Tu as aidé <b>'+G.helped+'</b> patient'+(G.helped>1?'s':'')+', bu <b>'+G.coffees+'</b> café'+(G.coffees>1?'s':'')+' et marqué <b>'+G.score+' pts</b>.<br>Meilleur score : '+best+' pts.';
-  $('#over').classList.remove('hidden');}
-$('#replay').onclick=()=>{const best=Math.max(G.best,G.score);G=freshState();G.best=best;G.started=true;resetPlayer();refreshPatients();printerParts.forEach((p,i)=>p.g.visible=i<2);lastRoom=null;$('#over').classList.add('hidden');updateHUD();};
+// ================= Journées =================
+function endDay(){if(G.dayEnding)return;G.dayEnding=true;if(G.modal)closeModal();resetJoy();$('#act').style.display='none';
+  let night=0;G.printers.forEach(p=>{if(p){const d=G.active.find(x=>x.id===p.pid);if(d&&!d.printReady){d.printReady=true;night++;}}});
+  G.printers=G.printers.map(()=>null);G.hires={};G.queue.forEach(p=>p.patience=p.maxPat);
+  const T=G.today;const avg=T.helped?T.stars/T.helped:0;
+  $('#dayTitle').textContent='Fin du jour '+G.day;
+  let h='<p>17 h, le lab ferme ses portes. Voici le bilan de la journée.</p><div class="item">'+
+    '<b>'+T.helped+'</b> patient'+(T.helped>1?'s':'')+' aidé'+(T.helped>1?'s':'')+(T.helped?' · satisfaction moyenne '+starsTxt(Math.round(avg)):'')+'<br>'+
+    '<b>'+T.pts+'</b> points gagnés · <b>'+(T.renom>=0?'+':'')+T.renom+'</b> renommée<br>'+
+    '<b>'+T.coffees+'</b> café'+(T.coffees>1?'s':'')+(T.left?' · <b>'+T.left+'</b> patient'+(T.left>1?'s':'')+' reparti'+(T.left>1?'s':'')+' sans solution':'')+'</div>';
+  h+='<p class="muted">Statut : '+TIERS[tierOf(G.renom)][1]+' · bibliothèque '+Object.keys(G.library).length+' / '+NEEDS.length+'</p>';
+  if(night)h+='<p class="muted">🖨️ '+night+' impression'+(night>1?'s tourneront':' tournera')+' pendant la nuit.</p>';
+  if(G.active.length)h+='<p class="muted">📋 '+G.active.length+' dossier'+(G.active.length>1?'s continuent':' continue')+' demain.</p>';
+  if(G.queue.length)h+='<p class="muted">🚪 Les patients en salle d’attente reviendront demain matin.</p>';
+  h+='<p class="muted">Partie sauvegardée.</p>';
+  $('#dayTxt').innerHTML=h;$('#nextDay').textContent='Commencer le jour '+(G.day+1);save();$('#dayend').classList.remove('hidden');}
+function nextDay(){G.returns.forEach(r=>r.at=Math.max(8,r.at-G.t));G.t=0;G.dayT=0;G.day++;G.cut=false;G.energy=100;G.lastView=-999;G.nextArrival=4;
+  G.today={helped:0,stars:0,coffees:0,pts:0,renom:0,left:0};G.active.forEach(d=>{d.taken=0;d.autoAt=0;});G.dayEnding=false;
+  resetPlayer();refreshPatients();lastRoom=null;save();$('#dayend').classList.add('hidden');updateHUD();
+  toast('☀️ Jour '+G.day+' : bonne journée au lab !');if(G.active.some(d=>d.printReady))setTimeout(()=>toast('🖨️ Les impressions de la nuit sont prêtes.'),900);}
+$('#nextDay').onclick=nextDay;
+
+// ================= Démarrage =================
+function setupStart(){const s=loadSave();G.best=+(store.get('labo_best')||0);
+  $('#bestTxt').textContent=G.best?'Meilleur score : '+G.best+' pts':'';
+  if(s){$('#play').textContent='Continuer (jour '+s.day+')';$('#newg').classList.remove('hidden');}}
+function begin(){$('#start').classList.add('hidden');G.started=true;lastRoom=null;printerParts.forEach((p,i)=>p.g.visible=i<G.printers.length);
+  resetPlayer();refreshPatients();updateHUD();save();toast('☀️ Jour '+G.day+' : bonne journée au lab !');}
+$('#play').onclick=()=>{const s=loadSave();if(s)applySave(s);else{G=freshState();initProjects();}begin();};
+let confirmNew=false;
+$('#newg').onclick=()=>{if(!confirmNew){confirmNew=true;$('#newg').textContent='Confirmer : effacer la progression';return;}
+  const best=Math.max(G.best,+(store.get('labo_best')||0));store.set('labo_save','');G=freshState();G.best=best;initProjects();begin();};
+setupStart();
 </script>
 </body>
 </html>
